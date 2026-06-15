@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grand Staff Note Finder</title>
+  <style>
+    :root {
+      --ink: #334155;
+      --soft-ink: #64748b;
+      --paper: #fffdf7;
+      --cream: #fff7d6;
+      --sky: #dff7ff;
+      --pink: #ffd6e8;
+      --mint: #d9fdd3;
+      --yellow: #fff2a8;
+      --lavender: #eadcff;
+      --correct: #86efac;
+      --wrong: #fecaca;
+      --shadow: 0 16px 38px rgba(51, 65, 85, 0.15);
+      --soft-shadow: 0 9px 18px rgba(51, 65, 85, 0.12);
+      --radius: 30px;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    body {
+      font-family: "Chalkboard SE", "Comic Sans MS", "Trebuchet MS", Arial, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 10%, #fff0f8 0 16%, transparent 17%),
+        radial-gradient(circle at 90% 12%, #e2fbff 0 18%, transparent 19%),
+        radial-gradient(circle at 18% 92%, #fff3be 0 17%, transparent 18%),
+        linear-gradient(135deg, var(--cream), var(--sky));
+      overflow-x: hidden;
+    }
+
+    button {
+      font-family: inherit;
+      color: inherit;
+    }
+
+    .app {
+      width: min(1300px, 97vw);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: clamp(10px, 2vw, 22px);
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 14px;
+    }
+
+    header {
+      background: rgba(255, 255, 255, 0.84);
+      border: 4px solid rgba(255, 255, 255, 0.95);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 12px clamp(14px, 2.2vw, 24px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(1.8rem, 4.5vw, 3.35rem);
+      line-height: 1;
+    }
+
+    .brand p {
+      margin: 5px 0 0;
+      color: var(--soft-ink);
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      font-weight: 900;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .pill,
+    .action-btn {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      min-height: 50px;
+      background: white;
+      color: var(--ink);
+      box-shadow: var(--soft-shadow);
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      font-weight: 900;
+    }
+
+    .action-btn {
+      cursor: pointer;
+      background: var(--lavender);
+      transition: transform 0.14s ease, filter 0.14s ease;
+    }
+
+    .home-btn {
+      background: var(--yellow);
+    }
+
+    .action-btn:hover {
+      filter: brightness(1.02);
+      transform: translateY(-2px);
+    }
+
+    .action-btn:active {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    main {
+      display: grid;
+      grid-template-rows: 1fr auto;
+      gap: 14px;
+      min-height: 0;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.88);
+      border: 4px solid rgba(255, 255, 255, 0.98);
+      border-radius: 38px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .staff-card {
+      min-height: 400px;
+      padding: clamp(12px, 2vw, 22px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .instruction {
+      margin: 0;
+      text-align: center;
+      color: var(--soft-ink);
+      font-size: clamp(1.1rem, 2.5vw, 1.55rem);
+      font-weight: 900;
+    }
+
+    .staff-wrap {
+      flex: 1;
+      min-height: 310px;
+      background: linear-gradient(180deg, #fffef8, #fff7df);
+      border: 4px solid #ffffff;
+      border-radius: 30px;
+      box-shadow: inset 0 0 0 2px rgba(251, 191, 36, 0.18);
+      display: grid;
+      place-items: center;
+      padding: 8px;
+      overflow: hidden;
+    }
+
+    .staff-svg {
+      width: 100%;
+      height: 100%;
+      min-height: 295px;
+      display: block;
+    }
+
+    .staff-line {
+      stroke: #1f2937;
+      stroke-width: 3.6;
+      stroke-linecap: round;
+    }
+
+    .bar-line {
+      stroke: #1f2937;
+      stroke-width: 4;
+      stroke-linecap: round;
+    }
+
+    .brace {
+      fill: none;
+      stroke: #1f2937;
+      stroke-width: 5;
+      stroke-linecap: round;
+    }
+
+    .ledger-line {
+      stroke: #1f2937;
+      stroke-width: 4.2;
+      stroke-linecap: round;
+    }
+
+    .note-stem {
+      stroke: #1f2937;
+      stroke-width: 5;
+      stroke-linecap: round;
+    }
+
+    .note-head {
+      stroke: #1f2937;
+      stroke-width: 3.2;
+      filter: drop-shadow(0 5px 4px rgba(51, 65, 85, 0.18));
+      transition: cy 180ms ease, fill 180ms ease, opacity 180ms ease;
+    }
+
+    .listening-cue {
+      font-size: 30px;
+      font-weight: 900;
+      fill: #475569;
+      opacity: 0;
+      transition: opacity 180ms ease;
+    }
+
+    .level-3 .listening-cue {
+      opacity: 1;
+    }
+
+    .level-3 #noteGroup {
+      opacity: 0;
+    }
+
+    .keyboard-card {
+      min-height: clamp(270px, 34vh, 385px);
+      padding: clamp(10px, 2vw, 18px);
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    .keyboard {
+      position: relative;
+      width: 100%;
+      height: clamp(240px, 31vh, 345px);
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      background: #eef2f7;
+      border: 4px solid #ffffff;
+      border-radius: 32px;
+      padding: 10px;
+      box-shadow: inset 0 0 0 2px rgba(100, 116, 139, 0.15);
+      overflow: hidden;
+    }
+
+    .white-keys {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      display: flex;
+    }
+
+    .piano-key {
+      flex: 1 1 0;
+      min-width: 0;
+      height: 100%;
+      border: 3px solid #6b7280;
+      border-right-width: 1.5px;
+      border-left-width: 1.5px;
+      border-radius: 0 0 22px 22px;
+      background: linear-gradient(180deg, #ffffff, #f8fafc);
+      color: var(--ink);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 5px;
+      padding: 0 4px 18px;
+      box-shadow: inset 0 -8px 0 rgba(51, 65, 85, 0.06);
+      font-weight: 900;
+      transition: transform 0.08s ease, background 0.14s ease, box-shadow 0.14s ease;
+      position: relative;
+    }
+
+    .piano-key:first-child {
+      border-left-width: 3px;
+      border-radius: 22px 0 22px 22px;
+    }
+
+    .piano-key:last-child {
+      border-right-width: 3px;
+      border-radius: 0 22px 22px 22px;
+    }
+
+    .piano-key:active {
+      transform: translateY(3px);
+    }
+
+    .key-letter {
+      font-size: clamp(2.6rem, 7vw, 5rem);
+      line-height: 1;
+      text-shadow: 0 3px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .key-octave {
+      font-size: clamp(0.8rem, 1.8vw, 1.05rem);
+      color: var(--soft-ink);
+      font-weight: 900;
+    }
+
+    .color-strip {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: 8px;
+      height: 10px;
+      border-radius: 999px;
+      opacity: 0.8;
+    }
+
+    .middle-star {
+      position: absolute;
+      top: 53%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: clamp(1.7rem, 4vw, 3rem);
+      filter: drop-shadow(0 3px 2px rgba(51, 65, 85, 0.2));
+      pointer-events: none;
+    }
+
+    .middle-label {
+      position: absolute;
+      top: 43%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: clamp(0.78rem, 1.6vw, 1rem);
+      color: #ef4444;
+      font-weight: 900;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    .black-keys {
+      pointer-events: none;
+      position: absolute;
+      z-index: 3;
+      left: 10px;
+      right: 10px;
+      top: 10px;
+      height: 58%;
+    }
+
+    .black-key {
+      position: absolute;
+      top: 0;
+      width: min(7.2%, 70px);
+      height: 100%;
+      background: linear-gradient(180deg, #111827, #000000);
+      border: 2px solid #111827;
+      border-radius: 0 0 12px 12px;
+      box-shadow: 0 6px 0 rgba(0, 0, 0, 0.25);
+      transform: translateX(-50%);
+    }
+
+    .correct {
+      background: linear-gradient(180deg, #ffffff, var(--correct)) !important;
+      box-shadow: inset 0 -8px 0 rgba(22, 163, 74, 0.16), 0 0 0 8px rgba(134, 239, 172, 0.45);
+    }
+
+    .wrong {
+      background: linear-gradient(180deg, #ffffff, var(--wrong)) !important;
+    }
+
+    .shake {
+      animation: shake 420ms ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-10px); }
+      40% { transform: translateX(10px); }
+      60% { transform: translateX(-7px); }
+      80% { transform: translateX(7px); }
+    }
+
+    .flash-correct {
+      animation: happyFlash 680ms ease;
+    }
+
+    @keyframes happyFlash {
+      0% { box-shadow: var(--shadow); }
+      35% { box-shadow: 0 0 0 18px rgba(134, 239, 172, 0.72), var(--shadow); }
+      100% { box-shadow: var(--shadow); }
+    }
+
+    .menu-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: rgba(255, 247, 214, 0.9);
+      backdrop-filter: blur(6px);
+    }
+
+    .menu-box {
+      width: min(940px, 96vw);
+      background: #ffffff;
+      border: 7px solid #ffe070;
+      border-radius: 44px;
+      padding: clamp(22px, 4vw, 42px);
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+
+    .menu-box h2 {
+      margin: 0 0 8px;
+      font-size: clamp(2.2rem, 7vw, 4.8rem);
+      line-height: 1;
+    }
+
+    .menu-box p {
+      margin: 0 0 24px;
+      color: var(--soft-ink);
+      font-size: clamp(1.08rem, 2.6vw, 1.45rem);
+      font-weight: 900;
+    }
+
+    .level-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: clamp(12px, 2vw, 20px);
+    }
+
+    .level-btn {
+      border: 0;
+      min-height: 210px;
+      border-radius: 34px;
+      padding: 18px 12px;
+      cursor: pointer;
+      box-shadow: 0 10px 0 rgba(51, 65, 85, 0.13), var(--shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: transform 0.15s ease, filter 0.15s ease;
+    }
+
+    .level-btn:hover {
+      transform: translateY(-5px);
+      filter: brightness(1.02);
+    }
+
+    .level-btn:active {
+      transform: translateY(2px);
+    }
+
+    .level-btn:nth-child(1) {
+      background: linear-gradient(180deg, #ffffff, var(--pink));
+    }
+
+    .level-btn:nth-child(2) {
+      background: linear-gradient(180deg, #ffffff, var(--sky));
+    }
+
+    .level-btn:nth-child(3) {
+      background: linear-gradient(180deg, #ffffff, var(--mint));
+    }
+
+    .level-icon {
+      font-size: clamp(3rem, 8vw, 5.2rem);
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+
+    .level-name {
+      font-size: clamp(1.35rem, 2.8vw, 2rem);
+      font-weight: 900;
+      line-height: 1.1;
+    }
+
+    .level-desc {
+      margin-top: 8px;
+      font-size: clamp(0.95rem, 1.8vw, 1.12rem);
+      color: var(--soft-ink);
+      font-weight: 900;
+      line-height: 1.22;
+    }
+
+    .star,
+    .confetti {
+      position: fixed;
+      pointer-events: none;
+      z-index: 80;
+    }
+
+    .star {
+      font-size: 34px;
+      animation: floatStar 950ms ease-out forwards;
+    }
+
+    @keyframes floatStar {
+      0% { transform: translateY(0) scale(0.8) rotate(0deg); opacity: 0; }
+      20% { opacity: 1; }
+      100% { transform: translateY(-145px) scale(1.35) rotate(24deg); opacity: 0; }
+    }
+
+    .confetti {
+      width: 12px;
+      height: 20px;
+      border-radius: 4px;
+      animation: fallConfetti 950ms ease-out forwards;
+    }
+
+    @keyframes fallConfetti {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(180px) rotate(280deg); opacity: 0; }
+    }
+
+    @media (max-width: 850px) {
+      header {
+        justify-content: center;
+        text-align: center;
+      }
+
+      .controls {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .level-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .level-btn {
+        min-height: 145px;
+      }
+
+      .staff-card {
+        min-height: 370px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .app {
+        width: 98vw;
+      }
+
+      .pill,
+      .action-btn {
+        padding: 10px 13px;
+      }
+
+      .keyboard-card {
+        min-height: 300px;
+      }
+
+      .keyboard {
+        height: 275px;
+        padding: 8px;
+      }
+
+      .black-keys {
+        left: 8px;
+        right: 8px;
+        top: 8px;
+      }
+
+      .piano-key {
+        padding-bottom: 16px;
+      }
+
+      .key-letter {
+        font-size: clamp(2.1rem, 9vw, 4rem);
+      }
+
+      .key-octave {
+        font-size: 0.72rem;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .keyboard {
+        overflow-x: auto;
+        justify-content: flex-start;
+      }
+
+      .white-keys {
+        min-width: 760px;
+      }
+
+      .black-keys {
+        width: 760px;
+        left: 8px;
+        right: auto;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 1ms !important;
+        transition-duration: 1ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <h1>Grand Staff Note Finder</h1>
+        <p id="levelSubtitle">Choose a level to start.</p>
+      </div>
+      <div class="controls">
+        <div class="pill" id="levelPill">Home</div>
+        <div class="pill">Stars: <span id="score">0</span></div>
+        <button class="action-btn" id="hearAgainBtn" type="button">🔊 Hear Again</button>
+        <button class="action-btn home-btn" id="homeBtn" type="button">🏠 Home</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="card staff-card" id="staffCard">
+        <p class="instruction" id="instruction">Choose a level, then listen and play.</p>
+        <div class="staff-wrap">
+          <svg class="staff-svg" viewBox="0 0 1000 390" aria-label="Grand staff with treble and bass clef">
+            <rect x="0" y="0" width="1000" height="390" rx="26" fill="#fffdf7"></rect>
+
+            <!-- Grand-staff brace, treble staff, and bass staff -->
+            <path class="brace" d="M45,54 C20,82 22,129 48,155 C66,174 66,216 48,235 C22,262 20,329 47,356"></path>
+
+            <g id="staffLines">
+              <!-- Treble staff lines: F5, D5, B4, G4, E4 -->
+              <line class="staff-line" x1="95" y1="65" x2="930" y2="65"></line>
+              <line class="staff-line" x1="95" y1="90" x2="930" y2="90"></line>
+              <line class="staff-line" x1="95" y1="115" x2="930" y2="115"></line>
+              <line class="staff-line" x1="95" y1="140" x2="930" y2="140"></line>
+              <line class="staff-line" x1="95" y1="165" x2="930" y2="165"></line>
+
+              <!-- Bass staff lines: A3, F3, D3, B2, G2 -->
+              <line class="staff-line" x1="95" y1="215" x2="930" y2="215"></line>
+              <line class="staff-line" x1="95" y1="240" x2="930" y2="240"></line>
+              <line class="staff-line" x1="95" y1="265" x2="930" y2="265"></line>
+              <line class="staff-line" x1="95" y1="290" x2="930" y2="290"></line>
+              <line class="staff-line" x1="95" y1="315" x2="930" y2="315"></line>
+
+              <line class="bar-line" x1="95" y1="65" x2="95" y2="165"></line>
+              <line class="bar-line" x1="107" y1="65" x2="107" y2="165"></line>
+              <line class="bar-line" x1="95" y1="215" x2="95" y2="315"></line>
+              <line class="bar-line" x1="107" y1="215" x2="107" y2="315"></line>
+            </g>
+
+            <text x="122" y="174" font-size="142" fill="#111827" font-family="Georgia, 'Times New Roman', serif">𝄞</text>
+            <text x="124" y="309" font-size="122" fill="#111827" font-family="Georgia, 'Times New Roman', serif">𝄢</text>
+
+            <text class="listening-cue" x="425" y="195">👂 Listen, then tap the key</text>
+
+            <g id="ledgerLines"></g>
+
+            <g id="noteGroup">
+              <ellipse id="noteHead" class="note-head" cx="560" cy="190" rx="29" ry="20" fill="#ef4444" transform="rotate(-18 560 190)"></ellipse>
+              <line id="noteStem" class="note-stem" x1="585" y1="190" x2="585" y2="100"></line>
+            </g>
+          </svg>
+        </div>
+      </section>
+
+      <section class="card keyboard-card">
+        <div class="keyboard" id="keyboard">
+          <div class="white-keys" id="whiteKeys"></div>
+          <div class="black-keys" id="blackKeys"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="menu-overlay" id="menuOverlay">
+    <div class="menu-box">
+      <h2>🎹 Choose a Level</h2>
+      <p>Level 1 uses colored notes, Level 2 uses black notes, Level 3 is listening only.</p>
+      <div class="level-grid">
+        <button class="level-btn" type="button" data-level="1">
+          <span class="level-icon">🌈</span>
+          <span class="level-name">Level 1<br>Colored Notes</span>
+          <span class="level-desc">See the note, hear it, tap the matching key.</span>
+        </button>
+        <button class="level-btn" type="button" data-level="2">
+          <span class="level-icon">🎼</span>
+          <span class="level-name">Level 2<br>Black Notes</span>
+          <span class="level-desc">Same game, but no note color hint.</span>
+        </button>
+        <button class="level-btn" type="button" data-level="3">
+          <span class="level-icon">👂</span>
+          <span class="level-name">Level 3<br>Sound Only</span>
+          <span class="level-desc">Listen carefully and find the piano key.</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /*
+      NOTES USED IN THIS GAME
+
+      Range: F3, G3, A3, B3, C4, D4, E4, F4, G4.
+      C4 is Middle C and is marked with a star on the piano.
+      Staff positions are mapped on a grand staff:
+      F3-A3 on bass staff, C4 on a ledger line, D4-G4 near the treble staff.
+    */
+    const NOTES = [
+      { id: "F3", letter: "F", octave: 3, frequency: 174.614, y: 240, color: "#22c55e" },
+      { id: "G3", letter: "G", octave: 3, frequency: 195.998, y: 227.5, color: "#3b82f6" },
+      { id: "A3", letter: "A", octave: 3, frequency: 220.000, y: 215, color: "#a855f7" },
+      { id: "B3", letter: "B", octave: 3, frequency: 246.942, y: 202.5, color: "#ec4899" },
+      { id: "C4", letter: "C", octave: 4, frequency: 261.626, y: 190, color: "#ef4444", middleC: true },
+      { id: "D4", letter: "D", octave: 4, frequency: 293.665, y: 177.5, color: "#f97316" },
+      { id: "E4", letter: "E", octave: 4, frequency: 329.628, y: 165, color: "#facc15" },
+      { id: "F4", letter: "F", octave: 4, frequency: 349.228, y: 152.5, color: "#22c55e" },
+      { id: "G4", letter: "G", octave: 4, frequency: 391.995, y: 140, color: "#3b82f6" }
+    ];
+
+    /*
+      Black-key positions for the displayed white-key range F3 to G4.
+      Each number means: place a black key between white key index n and n+1.
+      Correct pattern: F# between F-G, G# between G-A, A# between A-B,
+      none between B-C, C# between C-D, D# between D-E, none between E-F,
+      F# between F-G.
+    */
+    const BLACK_KEY_AFTER_INDEXES = [0, 1, 2, 4, 5, 7];
+
+    const LEVELS = {
+      1: {
+        title: "Level 1",
+        subtitle: "Colored notes help connect staff, sound, and key.",
+        instruction: "See the colored note, hear it, then tap the matching key.",
+        noteMode: "color"
+      },
+      2: {
+        title: "Level 2",
+        subtitle: "No color hint on the staff note.",
+        instruction: "Read the black note on the grand staff, then tap the matching key.",
+        noteMode: "black"
+      },
+      3: {
+        title: "Level 3",
+        subtitle: "Listening only.",
+        instruction: "Listen carefully, then tap the matching piano key.",
+        noteMode: "hidden"
+      }
+    };
+
+    const whiteKeys = document.getElementById("whiteKeys");
+    const blackKeys = document.getElementById("blackKeys");
+    const keyboard = document.getElementById("keyboard");
+    const staffCard = document.getElementById("staffCard");
+    const noteHead = document.getElementById("noteHead");
+    const noteStem = document.getElementById("noteStem");
+    const noteGroup = document.getElementById("noteGroup");
+    const ledgerLines = document.getElementById("ledgerLines");
+    const menuOverlay = document.getElementById("menuOverlay");
+    const hearAgainBtn = document.getElementById("hearAgainBtn");
+    const homeBtn = document.getElementById("homeBtn");
+    const scoreEl = document.getElementById("score");
+    const levelPill = document.getElementById("levelPill");
+    const levelSubtitle = document.getElementById("levelSubtitle");
+    const instruction = document.getElementById("instruction");
+    const staffSvg = document.querySelector(".staff-svg");
+
+    let audioContext = null;
+    let currentNote = null;
+    let score = 0;
+    let currentLevel = null;
+    let waitingForNext = false;
+
+    function initAudio() {
+      if (!audioContext) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioContext = new AudioContext();
+      }
+
+      if (audioContext.state === "suspended") {
+        audioContext.resume();
+      }
+    }
+
+    function playPianoNote(frequency) {
+      initAudio();
+
+      const now = audioContext.currentTime;
+      const duration = 1.15;
+
+      const master = audioContext.createGain();
+      master.gain.setValueAtTime(0.0001, now);
+      master.gain.exponentialRampToValueAtTime(0.23, now + 0.015);
+      master.gain.exponentialRampToValueAtTime(0.09, now + 0.16);
+      master.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+      const filter = audioContext.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(1800, now);
+      filter.frequency.exponentialRampToValueAtTime(650, now + duration);
+      filter.Q.setValueAtTime(0.8, now);
+
+      master.connect(filter);
+      filter.connect(audioContext.destination);
+
+      const partials = [
+        { ratio: 1.00, gain: 1.00, type: "triangle" },
+        { ratio: 2.00, gain: 0.28, type: "sine" },
+        { ratio: 3.01, gain: 0.12, type: "sine" },
+        { ratio: 4.02, gain: 0.06, type: "sine" }
+      ];
+
+      partials.forEach(partial => {
+        const osc = audioContext.createOscillator();
+        const oscGain = audioContext.createGain();
+
+        osc.type = partial.type;
+        osc.frequency.setValueAtTime(frequency * partial.ratio, now);
+        osc.detune.setValueAtTime((Math.random() - 0.5) * 5, now);
+
+        oscGain.gain.setValueAtTime(partial.gain, now);
+
+        osc.connect(oscGain);
+        oscGain.connect(master);
+
+        osc.start(now);
+        osc.stop(now + duration + 0.03);
+      });
+    }
+
+    function playSoftBloop() {
+      initAudio();
+
+      const now = audioContext.currentTime;
+      const master = audioContext.createGain();
+      const osc = audioContext.createOscillator();
+      const filter = audioContext.createBiquadFilter();
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(164.81, now);
+      osc.frequency.exponentialRampToValueAtTime(123.47, now + 0.22);
+
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(480, now);
+
+      master.gain.setValueAtTime(0.0001, now);
+      master.gain.exponentialRampToValueAtTime(0.08, now + 0.02);
+      master.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+
+      osc.connect(filter);
+      filter.connect(master);
+      master.connect(audioContext.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.32);
+    }
+
+    function createKeyboard() {
+      whiteKeys.innerHTML = "";
+      blackKeys.innerHTML = "";
+
+      NOTES.forEach(note => {
+        const key = document.createElement("button");
+        key.className = "piano-key";
+        key.type = "button";
+        key.dataset.noteId = note.id;
+        key.setAttribute("aria-label", `${note.id} piano key`);
+
+        key.innerHTML = `
+          ${note.middleC ? '<span class="middle-label">Middle C</span><span class="middle-star">⭐</span>' : ''}
+          <span class="key-letter">${note.letter}</span>
+          <span class="key-octave">${note.id}</span>
+          <span class="color-strip" style="background:${note.color}"></span>
+        `;
+
+        key.addEventListener("click", () => handleKeyTap(note, key));
+        whiteKeys.appendChild(key);
+      });
+
+      BLACK_KEY_AFTER_INDEXES.forEach(index => {
+        const black = document.createElement("div");
+        black.className = "black-key";
+        const leftPercent = ((index + 1) / NOTES.length) * 100;
+        black.style.left = `${leftPercent}%`;
+        blackKeys.appendChild(black);
+      });
+    }
+
+    function startLevel(levelNumber) {
+      initAudio();
+
+      currentLevel = Number(levelNumber);
+      score = 0;
+      scoreEl.textContent = score;
+      waitingForNext = false;
+
+      const level = LEVELS[currentLevel];
+      levelPill.textContent = level.title;
+      levelSubtitle.textContent = level.subtitle;
+      instruction.textContent = level.instruction;
+
+      staffSvg.classList.toggle("level-3", level.noteMode === "hidden");
+      menuOverlay.style.display = "none";
+
+      chooseRandomNote();
+    }
+
+    function goHome() {
+      currentLevel = null;
+      currentNote = null;
+      waitingForNext = false;
+      score = 0;
+      scoreEl.textContent = score;
+      levelPill.textContent = "Home";
+      levelSubtitle.textContent = "Choose a level to start.";
+      instruction.textContent = "Choose a level, then listen and play.";
+      staffSvg.classList.remove("level-3");
+      noteGroup.style.opacity = 1;
+      drawNote(NOTES[4], "color");
+      menuOverlay.style.display = "grid";
+    }
+
+    function chooseRandomNote() {
+      const pool = currentNote ? NOTES.filter(note => note.id !== currentNote.id) : NOTES;
+      currentNote = pool[Math.floor(Math.random() * pool.length)];
+
+      const mode = LEVELS[currentLevel].noteMode;
+      drawNote(currentNote, mode);
+
+      window.setTimeout(() => {
+        playPianoNote(currentNote.frequency);
+      }, 120);
+    }
+
+    function drawNote(note, mode) {
+      const x = 560;
+      const stemX = 585;
+      const hideNote = mode === "hidden";
+      const fillColor = mode === "black" ? "#111827" : note.color;
+
+      noteGroup.style.opacity = hideNote ? 0 : 1;
+      noteHead.setAttribute("cy", note.y);
+      noteHead.setAttribute("fill", fillColor);
+      noteHead.setAttribute("transform", `rotate(-18 ${x} ${note.y})`);
+
+      noteStem.setAttribute("x1", stemX);
+      noteStem.setAttribute("y1", note.y);
+      noteStem.setAttribute("x2", stemX);
+      noteStem.setAttribute("y2", Math.max(92, note.y - 90));
+
+      drawLedgerLines(note, hideNote);
+    }
+
+    function drawLedgerLines(note, hideNote) {
+      ledgerLines.innerHTML = "";
+      if (hideNote) return;
+
+      // Middle C ledger line between the treble and bass staves.
+      if (note.id === "C4") {
+        addLedgerLine(518, 602, 190);
+      }
+    }
+
+    function addLedgerLine(x1, x2, y) {
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("class", "ledger-line");
+      line.setAttribute("x1", String(x1));
+      line.setAttribute("x2", String(x2));
+      line.setAttribute("y1", String(y));
+      line.setAttribute("y2", String(y));
+      ledgerLines.appendChild(line);
+    }
+
+    function handleKeyTap(note, keyElement) {
+      if (!currentNote || !currentLevel || waitingForNext) return;
+
+      initAudio();
+
+      if (note.id === currentNote.id) {
+        waitingForNext = true;
+        playPianoNote(currentNote.frequency);
+        score += 1;
+        scoreEl.textContent = score;
+
+        keyElement.classList.add("correct");
+        staffCard.classList.add("flash-correct");
+        celebrateAtElement(keyElement);
+
+        window.setTimeout(() => {
+          keyElement.classList.remove("correct");
+          staffCard.classList.remove("flash-correct");
+          waitingForNext = false;
+          chooseRandomNote();
+        }, 1000);
+      } else {
+        playSoftBloop();
+        keyElement.classList.add("wrong");
+        keyboard.classList.remove("shake");
+        void keyboard.offsetWidth;
+        keyboard.classList.add("shake");
+
+        window.setTimeout(() => {
+          keyElement.classList.remove("wrong");
+          keyboard.classList.remove("shake");
+        }, 520);
+      }
+    }
+
+    function celebrateAtElement(element) {
+      const rect = element.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+
+      for (let i = 0; i < 7; i++) {
+        window.setTimeout(() => {
+          starAt(x + randomBetween(-80, 80), y + randomBetween(-30, 20));
+        }, i * 45);
+      }
+
+      confettiBurst(x, y);
+    }
+
+    function starAt(x, y) {
+      const star = document.createElement("div");
+      star.className = "star";
+      star.textContent = ["⭐", "🌟", "✨"][Math.floor(Math.random() * 3)];
+      star.style.left = `${x}px`;
+      star.style.top = `${y}px`;
+      document.body.appendChild(star);
+      window.setTimeout(() => star.remove(), 1000);
+    }
+
+    function confettiBurst(x, y) {
+      const colors = ["#ff6ab2", "#ffd93d", "#6ee7b7", "#60a5fa", "#c084fc", "#fb923c"];
+
+      for (let i = 0; i < 20; i++) {
+        const piece = document.createElement("div");
+        piece.className = "confetti";
+        piece.style.left = `${x + randomBetween(-120, 120)}px`;
+        piece.style.top = `${y + randomBetween(-80, 20)}px`;
+        piece.style.background = colors[i % colors.length];
+        piece.style.animationDelay = `${Math.random() * 160}ms`;
+        piece.style.transform = `rotate(${randomBetween(0, 360)}deg)`;
+        document.body.appendChild(piece);
+        window.setTimeout(() => piece.remove(), 1100);
+      }
+    }
+
+    function randomBetween(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    document.querySelectorAll("[data-level]").forEach(button => {
+      button.addEventListener("click", () => startLevel(button.dataset.level));
+    });
+
+    hearAgainBtn.addEventListener("click", () => {
+      if (!currentNote) return;
+      initAudio();
+      playPianoNote(currentNote.frequency);
+    });
+
+    homeBtn.addEventListener("click", goHome);
+
+    createKeyboard();
+    drawNote(NOTES[4], "color");
+  </script>
+</body>
+</html>
